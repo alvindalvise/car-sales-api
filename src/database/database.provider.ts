@@ -9,8 +9,8 @@ export const databaseProviders = [
     useFactory: async () => {
       const sequelize = new Sequelize({
         dialect: 'mssql',
-        host: 'WINDOWS-IA94FGM\\SQLEXPRESS',
-        username: 'alvin',
+        host: 'LapLENONO-Chan2\\SQLEXPRESS',
+        username: 'camila',
         password: '1234',
         database: 'Venta_VehiculoDB',
         dialectOptions: {

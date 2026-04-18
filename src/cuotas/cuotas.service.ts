@@ -1,38 +1,31 @@
 import { Injectable, Inject } from '@nestjs/common';
+import { Sequelize } from 'sequelize-typescript';
 
 @Injectable()
 export class CuotasService {
 
   constructor(
-    @Inject('SEQUELIZE') private readonly sequelize: any,
+    @Inject('SEQUELIZE') private sequelize: Sequelize
   ) {}
 
   async findAll() {
-    return await this.sequelize.query(`
-      SELECT * FROM vw_CuotasDetalle
-    `);
+    const result = await this.sequelize.query(`EXEC sp_ObtenerCuotasPorSolicitud @Id_Solicitud=1`);
+    return result[0];
   }
 
   async findBySolicitud(idSolicitud: number) {
-    return await this.sequelize.query(`
-      SELECT * FROM vw_CuotasDetalle
-      WHERE IdSolicitud = :id
-    `, {
-      replacements: { id: idSolicitud },
-    });
+    const result = await this.sequelize.query(
+      `EXEC sp_ObtenerCuotasPorSolicitud @Id_Solicitud=:id`,
+      { replacements: { id: idSolicitud } }
+    );
+    return result[0];
   }
 
   async pagarCuota(idCuota: number) {
-    await this.sequelize.query(`
-      UPDATE Cuotas
-      SET IdEstadoCuota = (
-        SELECT IdEstadoCuota FROM EstadosCuota WHERE NombreEstado = 'Pagada'
-      )
-      WHERE IdCuota = :id
-    `, {
-      replacements: { id: idCuota },
-    });
-
+    await this.sequelize.query(
+      `UPDATE CUOTAS SET Id_Estado = 4 WHERE Id_Cuotas = :id`,
+      { replacements: { id: idCuota } }
+    );
     return { message: 'Cuota marcada como pagada' };
   }
 }

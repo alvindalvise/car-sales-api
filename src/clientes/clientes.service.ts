@@ -1,37 +1,51 @@
 import { Injectable, Inject } from '@nestjs/common';
-import { Cliente } from './entities/cliente.entity';
+import { Sequelize } from 'sequelize-typescript';
 import { CreateClienteDto } from './dto/create-cliente.dto';
 import { UpdateClienteDto } from './dto/update-cliente.dto';
 
 @Injectable()
 export class ClientesService {
 
-  
+  constructor(
+    @Inject('SEQUELIZE') private sequelize: Sequelize
+  ) {}
 
   async create(createClienteDto: CreateClienteDto) {
-  return await Cliente.create(createClienteDto as any);
-}
+    const { nombreCompleto, cedula, telefono, ingresoMensual } = createClienteDto;
+    const result = await this.sequelize.query(
+      `EXEC sp_InsertarCliente @nombreCompleto=:nombreCompleto, @cedula=:cedula, @telefono=:telefono, @ingresoMensual=:ingresoMensual`,
+      { replacements: { nombreCompleto, cedula, telefono: telefono ?? null, ingresoMensual } }
+    );
+    return result[0];
+  }
 
   async findAll() {
-    return await Cliente.findAll();
+    const result = await this.sequelize.query(`EXEC sp_ObtenerClientes`);
+    return result[0];
   }
 
   async findOne(id: number) {
-    return await Cliente.findByPk(id);
+    const result = await this.sequelize.query(
+      `EXEC sp_ObtenerClientePorId @Id_Cliente=:id`,
+      { replacements: { id } }
+    );
+    return result[0];
   }
 
   async update(id: number, updateClienteDto: UpdateClienteDto) {
-    const cliente = await Cliente.findByPk(id);
-    if (!cliente) return null;
-
-    return await cliente.update({ ...updateClienteDto });
+    const { nombreCompleto, telefono, ingresoMensual } = updateClienteDto;
+    const result = await this.sequelize.query(
+      `EXEC sp_ActualizarCliente @Id_Cliente=:id, @nombreCompleto=:nombreCompleto, @telefono=:telefono, @ingresoMensual=:ingresoMensual`,
+      { replacements: { id, nombreCompleto, telefono: telefono ?? null, ingresoMensual } }
+    );
+    return result[0];
   }
 
   async remove(id: number) {
-    const cliente = await Cliente.findByPk(id);
-    if (!cliente) return null;
-
-    await cliente.destroy();
-    return { message: 'Cliente eliminado correctamente' };
+    const result = await this.sequelize.query(
+      `EXEC sp_EliminarCliente @Id_Cliente=:id`,
+      { replacements: { id } }
+    );
+    return result[0];
   }
 }
