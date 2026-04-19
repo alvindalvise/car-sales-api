@@ -1,0 +1,983 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>AutoCredit — Venta de Vehículos</title>
+  <link href="https://fonts.googleapis.com/css2?family=Syne:wght@400;600;700;800&family=DM+Sans:ital,wght@0,300;0,400;0,500;1,400&display=swap" rel="stylesheet">
+  <style>
+    *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+    :root {
+      --bg:#0a0a0f; --surface:#12121a; --surface2:#1a1a26;
+      --border:#252535; --border2:#1e1e2e;
+      --text:#e8e8f0; --text2:#888899; --text3:#555566;
+      --accent:#e8356d; --accent2:#ff6b9d; --accent-glow:rgba(232,53,109,0.25);
+      --purple:#9f97ff; --teal:#4ecdc4; --blue:#60a5fa;
+      --amber:#f59e0b; --green:#4ade80; --red:#f87171;
+    }
+    body { font-family:'DM Sans',sans-serif; background:var(--bg); color:var(--text); min-height:100vh; overflow-x:hidden; }
+
+    /* AUTH */
+    #auth-screen { min-height:100vh; display:flex; align-items:center; justify-content:center; position:relative; padding:2rem; }
+    .auth-bg { position:fixed; inset:0; z-index:0; background:var(--bg); overflow:hidden; }
+    .auth-bg::before { content:''; position:absolute; top:-30%; left:-20%; width:80%; height:80%; background:radial-gradient(ellipse,rgba(232,53,109,0.13) 0%,transparent 70%); border-radius:50%; }
+    .auth-bg::after  { content:''; position:absolute; bottom:-20%; right:-10%; width:60%; height:60%; background:radial-gradient(ellipse,rgba(159,151,255,0.09) 0%,transparent 70%); border-radius:50%; }
+    .auth-grid { position:absolute; inset:0; background-image:linear-gradient(rgba(255,255,255,0.025) 1px,transparent 1px),linear-gradient(90deg,rgba(255,255,255,0.025) 1px,transparent 1px); background-size:50px 50px; }
+    .auth-card { position:relative; z-index:1; width:100%; max-width:440px; background:rgba(18,18,26,0.88); backdrop-filter:blur(20px); border:1px solid var(--border); border-radius:24px; padding:2.5rem; box-shadow:0 32px 80px rgba(0,0,0,0.5),0 0 0 1px rgba(255,255,255,0.04); }
+    .auth-logo { display:flex; align-items:center; gap:12px; margin-bottom:2rem; justify-content:center; }
+    .auth-logo-icon { width:44px; height:44px; background:linear-gradient(135deg,var(--accent),var(--accent2)); border-radius:14px; display:flex; align-items:center; justify-content:center; box-shadow:0 8px 24px var(--accent-glow); }
+    .auth-logo-icon svg { width:24px; height:24px; color:white; }
+    .auth-logo-text { font-family:'Syne',sans-serif; font-size:22px; font-weight:800; color:#fff; letter-spacing:-0.5px; }
+    .auth-logo-text span { color:var(--accent); }
+    .auth-title { font-family:'Syne',sans-serif; font-size:26px; font-weight:700; color:#fff; text-align:center; margin-bottom:6px; }
+    .auth-sub { font-size:14px; color:var(--text2); text-align:center; margin-bottom:1.75rem; }
+    .auth-tabs { display:flex; background:var(--surface2); border-radius:12px; padding:4px; margin-bottom:1.75rem; border:1px solid var(--border); }
+    .auth-tab { flex:1; padding:9px; border-radius:8px; border:none; background:transparent; color:var(--text2); font-family:'DM Sans',sans-serif; font-size:14px; font-weight:500; cursor:pointer; transition:all 0.2s; }
+    .auth-tab.active { background:var(--surface); color:#fff; box-shadow:0 2px 8px rgba(0,0,0,0.3); }
+    .field { margin-bottom:1rem; }
+    .field label { display:block; font-size:12px; font-weight:500; color:var(--text2); text-transform:uppercase; letter-spacing:0.06em; margin-bottom:7px; }
+    .field-wrap { position:relative; }
+    .field-wrap > svg { position:absolute; left:14px; top:50%; transform:translateY(-50%); width:16px; height:16px; color:var(--text3); pointer-events:none; }
+    .field input,.field select { width:100%; background:var(--surface2); border:1px solid var(--border); border-radius:12px; padding:12px 14px 12px 40px; color:var(--text); font-family:'DM Sans',sans-serif; font-size:14px; outline:none; transition:border-color 0.2s,box-shadow 0.2s; appearance:none; }
+    .field select { cursor:pointer; }
+    .field input:focus,.field select:focus { border-color:var(--accent); box-shadow:0 0 0 3px var(--accent-glow); }
+    .field input::placeholder { color:var(--text3); }
+    .eye-btn { position:absolute; right:14px; top:50%; transform:translateY(-50%); background:none; border:none; color:var(--text3); cursor:pointer; padding:0; display:flex; }
+    .eye-btn svg { width:16px; height:16px; }
+    .btn-primary { width:100%; padding:13px; background:linear-gradient(135deg,var(--accent),#c0254f); border:none; border-radius:12px; color:#fff; font-family:'Syne',sans-serif; font-size:15px; font-weight:700; cursor:pointer; transition:all 0.2s; margin-top:0.5rem; box-shadow:0 8px 24px var(--accent-glow); letter-spacing:0.3px; }
+    .btn-primary:hover { transform:translateY(-1px); box-shadow:0 12px 32px var(--accent-glow); }
+    .btn-primary:active { transform:translateY(0); }
+    .auth-error { background:rgba(248,113,113,0.08); border:1px solid rgba(248,113,113,0.3); border-radius:10px; padding:10px 14px; font-size:13px; color:var(--red); margin-bottom:1rem; display:none; }
+    .auth-success { background:rgba(74,222,128,0.08); border:1px solid rgba(74,222,128,0.3); border-radius:10px; padding:10px 14px; font-size:13px; color:var(--green); margin-bottom:1rem; display:none; }
+
+    /* APP */
+    #app { display:none; }
+    .sidebar { position:fixed; top:0; left:0; width:230px; height:100vh; background:var(--surface); border-right:1px solid var(--border); display:flex; flex-direction:column; padding:1.5rem 1rem; z-index:10; }
+    .brand { display:flex; align-items:center; gap:10px; margin-bottom:2rem; padding-bottom:1.5rem; border-bottom:1px solid var(--border); }
+    .brand-icon { width:38px; height:38px; background:linear-gradient(135deg,var(--accent),var(--accent2)); border-radius:12px; display:flex; align-items:center; justify-content:center; box-shadow:0 4px 16px var(--accent-glow); flex-shrink:0; }
+    .brand-icon svg { width:20px; height:20px; color:white; }
+    .brand-name { font-family:'Syne',sans-serif; font-size:15px; font-weight:800; color:#fff; letter-spacing:-0.3px; }
+    .brand-sub { font-size:11px; color:var(--text3); }
+    nav a { display:flex; align-items:center; gap:10px; padding:10px 12px; border-radius:10px; color:var(--text2); text-decoration:none; font-size:13px; font-weight:500; margin-bottom:2px; transition:all 0.15s; cursor:pointer; position:relative; }
+    nav a:hover { background:var(--surface2); color:var(--text); }
+    nav a.active { background:rgba(232,53,109,0.1); color:var(--accent2); }
+    nav a.active::before { content:''; position:absolute; left:0; top:20%; bottom:20%; width:3px; background:var(--accent); border-radius:2px; }
+    nav a svg { width:15px; height:15px; flex-shrink:0; }
+    .sidebar-user { margin-top:auto; padding-top:1rem; border-top:1px solid var(--border); display:flex; align-items:center; gap:10px; }
+    .user-avatar { width:34px; height:34px; border-radius:10px; background:linear-gradient(135deg,var(--accent),var(--purple)); display:flex; align-items:center; justify-content:center; font-family:'Syne',sans-serif; font-size:13px; font-weight:700; color:white; flex-shrink:0; }
+    .user-info { flex:1; min-width:0; }
+    .user-name { font-size:13px; font-weight:500; color:var(--text); white-space:nowrap; overflow:hidden; text-overflow:ellipsis; }
+    .user-role { font-size:11px; color:var(--text3); }
+    .logout-btn { background:none; border:none; color:var(--text3); cursor:pointer; padding:4px; display:flex; border-radius:6px; transition:color 0.15s; }
+    .logout-btn:hover { color:var(--red); }
+    .logout-btn svg { width:15px; height:15px; }
+    .main { margin-left:230px; padding:2rem; min-height:100vh; }
+    .api-status { display:flex; align-items:center; gap:8px; font-size:12px; color:var(--text3); margin-bottom:1.5rem; }
+    .api-dot { width:7px; height:7px; border-radius:50%; background:var(--text3); transition:background 0.3s; }
+    .api-dot.online  { background:var(--green); box-shadow:0 0 6px rgba(74,222,128,0.5); }
+    .api-dot.offline { background:var(--red);   box-shadow:0 0 6px rgba(248,113,113,0.5); }
+    .page-header { margin-bottom:1.75rem; display:flex; align-items:flex-end; justify-content:space-between; }
+    .page-title { font-family:'Syne',sans-serif; font-size:24px; font-weight:700; color:#fff; letter-spacing:-0.5px; }
+    .page-sub { font-size:13px; color:var(--text2); margin-top:4px; }
+    .stats { display:grid; grid-template-columns:repeat(auto-fit,minmax(155px,1fr)); gap:14px; margin-bottom:1.75rem; }
+    .stat-card { background:var(--surface); border:1px solid var(--border); border-radius:14px; padding:1.25rem; }
+    .stat-icon { width:34px; height:34px; border-radius:10px; display:flex; align-items:center; justify-content:center; margin-bottom:12px; }
+    .stat-icon svg { width:16px; height:16px; }
+    .icon-stat-purple{background:#2d2a4a;color:var(--purple);}
+    .icon-stat-teal  {background:#1a3030;color:var(--teal);}
+    .icon-stat-blue  {background:#1a2540;color:var(--blue);}
+    .icon-stat-amber {background:#2e2010;color:var(--amber);}
+    .icon-stat-pink  {background:rgba(232,53,109,0.12);color:var(--accent2);}
+    .stat-label { font-size:11px; color:var(--text3); text-transform:uppercase; letter-spacing:0.06em; margin-bottom:6px; }
+    .stat-value { font-family:'Syne',sans-serif; font-size:26px; font-weight:700; color:#fff; }
+    .card { background:var(--surface); border:1px solid var(--border); border-radius:16px; overflow:hidden; margin-bottom:1.5rem; }
+    .card-header { padding:1.25rem 1.5rem; border-bottom:1px solid var(--border); display:flex; align-items:center; justify-content:space-between; }
+    .card-title { font-family:'Syne',sans-serif; font-size:15px; font-weight:600; color:var(--text); }
+    .refresh-btn { background:var(--surface2); border:1px solid var(--border); color:var(--text2); padding:6px 12px; border-radius:8px; font-size:12px; cursor:pointer; transition:all 0.15s; font-family:'DM Sans',sans-serif; }
+    .refresh-btn:hover { background:#252535; color:var(--text); }
+    .table-wrap { overflow-x:auto; }
+    table { width:100%; border-collapse:collapse; font-size:13px; }
+    thead th { text-align:left; padding:10px 16px; color:var(--text3); font-weight:500; font-size:11px; text-transform:uppercase; letter-spacing:0.06em; border-bottom:1px solid var(--border); }
+    tbody td { padding:12px 16px; border-bottom:1px solid var(--border2); color:var(--text2); vertical-align:middle; }
+    tbody tr:last-child td { border-bottom:none; }
+    tbody tr:hover td { background:rgba(255,255,255,0.02); }
+    .badge { display:inline-flex; align-items:center; gap:5px; padding:3px 10px; border-radius:20px; font-size:11px; font-weight:500; }
+    .badge::before { content:''; width:5px; height:5px; border-radius:50%; background:currentColor; }
+    .badge-pending  {background:#2e1f05;color:var(--amber);}
+    .badge-approved {background:#0a2410;color:var(--green);}
+    .badge-rejected {background:#2a0a0a;color:var(--red);}
+    .dot{display:inline-block;width:7px;height:7px;border-radius:50%;margin-right:6px;}
+    .dot-green{background:var(--green);box-shadow:0 0 4px rgba(74,222,128,0.5);}
+    .dot-red{background:var(--red);}
+    .tag{display:inline-block;background:rgba(232,53,109,0.1);color:var(--accent2);border:1px solid rgba(232,53,109,0.2);border-radius:6px;font-size:10px;font-weight:600;text-transform:uppercase;padding:2px 7px;letter-spacing:0.05em;}
+    .loading,.error,.empty{padding:3.5rem;text-align:center;color:var(--text3);font-size:14px;}
+    .error{color:var(--red);}
+    .spinner{width:28px;height:28px;border:2px solid var(--border);border-top-color:var(--accent);border-radius:50%;animation:spin 0.7s linear infinite;margin:0 auto 1rem;}
+    @keyframes spin{to{transform:rotate(360deg);}}
+
+    /* CATALOGUE */
+    .listing-meta { display:flex; align-items:center; justify-content:space-between; margin-bottom:1rem; }
+    .listing-count { font-size:13px; color:var(--text2); }
+    .listing-count strong { color:var(--text); }
+    .vehicle-list { display:flex; flex-direction:column; gap:14px; }
+    .vcard { background:var(--surface); border:1px solid var(--border); border-radius:16px; display:grid; grid-template-columns:260px 1fr; overflow:hidden; transition:border-color 0.2s,box-shadow 0.2s; }
+    .vcard:hover { border-color:rgba(232,53,109,0.4); box-shadow:0 8px 32px rgba(0,0,0,0.3); }
+    .vcard-img { min-height:190px; background:linear-gradient(135deg,#181828,#22223a); display:flex; align-items:center; justify-content:center; font-size:72px; position:relative; }
+    .vcard-avail-badge { position:absolute; top:12px; left:12px; font-size:10px; font-weight:700; text-transform:uppercase; padding:4px 10px; border-radius:20px; letter-spacing:0.05em; }
+    .avail-yes{background:rgba(74,222,128,0.15);color:var(--green);border:1px solid rgba(74,222,128,0.35);}
+    .avail-no {background:rgba(248,113,113,0.15);color:var(--red);  border:1px solid rgba(248,113,113,0.35);}
+    .vcard-body { padding:1.5rem; display:flex; flex-direction:column; justify-content:space-between; }
+    .vcard-price { font-family:'Syne',sans-serif; font-size:28px; font-weight:800; color:#fff; letter-spacing:-0.5px; margin-bottom:4px; }
+    .vcard-location { font-size:12px; color:var(--text3); margin-bottom:12px; display:flex; align-items:center; gap:5px; }
+    .vcard-location svg { width:12px; height:12px; }
+    .vcard-specs { display:flex; gap:18px; margin-bottom:10px; flex-wrap:wrap; }
+    .vcard-spec { display:flex; align-items:center; gap:6px; font-size:13px; color:var(--text2); }
+    .vcard-spec svg { width:14px; height:14px; color:var(--text3); }
+    .vcard-spec strong { color:var(--text); }
+    .vcard-name { font-family:'Syne',sans-serif; font-size:16px; font-weight:700; color:#fff; margin-bottom:5px; }
+    .vcard-desc { font-size:12px; color:var(--text3); line-height:1.5; margin-bottom:14px; }
+    .vcard-footer { display:flex; align-items:center; justify-content:space-between; padding-top:12px; border-top:1px solid var(--border); }
+    .btn-solicitud { display:flex; align-items:center; gap:7px; background:linear-gradient(135deg,var(--accent),#c0254f); border:none; border-radius:10px; color:white; font-family:'DM Sans',sans-serif; font-size:13px; font-weight:500; padding:9px 18px; cursor:pointer; transition:all 0.2s; box-shadow:0 4px 16px var(--accent-glow); }
+    .btn-solicitud:hover { transform:translateY(-1px); }
+    .btn-solicitud:disabled { opacity:0.4; cursor:not-allowed; transform:none; box-shadow:none; }
+    .btn-solicitud svg { width:14px; height:14px; }
+
+    /* MODAL */
+    .modal-overlay { position:fixed; inset:0; background:rgba(0,0,0,0.7); backdrop-filter:blur(4px); z-index:100; display:flex; align-items:center; justify-content:center; padding:1rem; opacity:0; pointer-events:none; transition:opacity 0.2s; }
+    .modal-overlay.open { opacity:1; pointer-events:all; }
+    .modal { background:var(--surface); border:1px solid var(--border); border-radius:20px; padding:2rem; width:100%; max-width:480px; box-shadow:0 32px 80px rgba(0,0,0,0.5); transform:translateY(20px); transition:transform 0.2s; }
+    .modal-overlay.open .modal { transform:translateY(0); }
+    .modal-header { display:flex; align-items:flex-start; justify-content:space-between; margin-bottom:1.5rem; }
+    .modal-title { font-family:'Syne',sans-serif; font-size:18px; font-weight:700; color:#fff; }
+    .modal-sub { font-size:13px; color:var(--text2); margin-top:4px; }
+    .modal-close { background:var(--surface2); border:1px solid var(--border); border-radius:8px; color:var(--text2); cursor:pointer; padding:6px; display:flex; }
+    .modal-close svg { width:16px; height:16px; }
+    .modal .field input,.modal .field select { padding-left:14px; }
+    .modal .field-wrap > svg { display:none; }
+
+    /* TOAST */
+    .toast { position:fixed; bottom:2rem; right:2rem; z-index:200; background:var(--surface); border:1px solid var(--border); border-radius:12px; padding:1rem 1.25rem; display:flex; align-items:center; gap:10px; font-size:14px; color:var(--text); box-shadow:0 8px 32px rgba(0,0,0,0.4); transform:translateY(100px); opacity:0; transition:all 0.3s; }
+    .toast.show { transform:translateY(0); opacity:1; }
+    .toast.success { border-color:rgba(74,222,128,0.4); }
+    .toast.error-toast { border-color:rgba(248,113,113,0.4); }
+    .toast-dot { width:8px; height:8px; border-radius:50%; flex-shrink:0; }
+    .toast.success .toast-dot { background:var(--green); }
+    .toast.error-toast .toast-dot { background:var(--red); }
+
+    .act-btn { border-radius:6px; padding:4px 10px; font-size:11px; cursor:pointer; border:1px solid; transition:opacity 0.15s; }
+    .act-btn:hover { opacity:0.8; }
+    .act-approve { background:rgba(74,222,128,0.1); border-color:rgba(74,222,128,0.35); color:var(--green); margin-right:4px; }
+    .act-reject  { background:rgba(248,113,113,0.1); border-color:rgba(248,113,113,0.35); color:var(--red); }
+  </style>
+</head>
+<body>
+
+<!-- AUTH -->
+<div id="auth-screen">
+  <div class="auth-bg"><div class="auth-grid"></div></div>
+  <div class="auth-card">
+    <div class="auth-logo">
+      <div class="auth-logo-icon">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+          <rect x="1" y="3" width="15" height="13" rx="2"/>
+          <path d="M16 8h4l3 5v3h-7V8zM5.5 21a1.5 1.5 0 100-3 1.5 1.5 0 000 3zM18.5 21a1.5 1.5 0 100-3 1.5 1.5 0 000 3z"/>
+        </svg>
+      </div>
+      <div class="auth-logo-text">Auto<span>Credit</span></div>
+    </div>
+
+    <div class="auth-tabs">
+      <button class="auth-tab active" onclick="switchTab('login')">Ingresar</button>
+      <button class="auth-tab" onclick="switchTab('register')">Crear cuenta</button>
+    </div>
+
+    <!-- LOGIN -->
+    <div id="tab-login">
+      <div class="auth-title">Bienvenido de vuelta</div>
+      <div class="auth-sub">Ingresa con tu email, nombre o usuario</div>
+      <br>
+      <div id="login-error" class="auth-error"></div>
+      <div class="field">
+        <label>Email o nombre de usuario</label>
+        <div class="field-wrap">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="8" r="4"/><path d="M20 21a8 8 0 10-16 0"/></svg>
+          <input type="text" id="login-id" placeholder="email@gmail.com / usuario" onkeydown="if(event.key==='Enter')doLogin()" />
+        </div>
+      </div>
+      <div class="field">
+        <label>Contraseña</label>
+        <div class="field-wrap">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="11" width="18" height="11" rx="2"/><path d="M7 11V7a5 5 0 0110 0v4"/></svg>
+          <input type="password" id="login-password" placeholder="••••••••" onkeydown="if(event.key==='Enter')doLogin()" />
+          <button class="eye-btn" onclick="togglePass('login-password')">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"/><circle cx="12" cy="12" r="3"/></svg>
+          </button>
+        </div>
+      </div>
+      <button class="btn-primary" onclick="doLogin()">Ingresar</button>
+    </div>
+
+    <!-- REGISTER — solo clientes -->
+    <div id="tab-register" style="display:none">
+      <div class="auth-title">Crear cuenta</div>
+      <div class="auth-sub">Regístrate para explorar vehículos y solicitar crédito</div>
+      <br>
+      <div id="reg-error" class="auth-error"></div>
+      <div id="reg-success" class="auth-success"></div>
+      <div class="field">
+        <label>Nombre completo</label>
+        <div class="field-wrap">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="8" r="4"/><path d="M20 21a8 8 0 10-16 0"/></svg>
+          <input type="text" id="reg-nombre" placeholder="Juan Pérez" />
+        </div>
+      </div>
+      <div class="field">
+        <label>Email</label>
+        <div class="field-wrap">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M4 4h16c1.1 0 2 .9 2 2v12c0 1.1-.9 2-2 2H4c-1.1 0-2-.9-2-2V6c0-1.1.9-2 2-2z"/><polyline points="22,6 12,12 2,6"/></svg>
+          <input type="email" id="reg-email" placeholder="tu@email.com" />
+        </div>
+      </div>
+      <div class="field">
+        <label>Contraseña</label>
+        <div class="field-wrap">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="11" width="18" height="11" rx="2"/><path d="M7 11V7a5 5 0 0110 0v4"/></svg>
+          <input type="password" id="reg-password" placeholder="Mínimo 6 caracteres" />
+          <button class="eye-btn" onclick="togglePass('reg-password')">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"/><circle cx="12" cy="12" r="3"/></svg>
+          </button>
+        </div>
+      </div>
+      <div class="field">
+        <label>Cédula</label>
+        <div class="field-wrap">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="2" y="5" width="20" height="14" rx="2"/><path d="M2 10h20"/></svg>
+          <input type="text" id="reg-cedula" placeholder="1-2345-6789" />
+        </div>
+      </div>
+      <div class="field">
+        <label>Teléfono (opcional)</label>
+        <div class="field-wrap">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M22 16.92v3a2 2 0 01-2.18 2A19.79 19.79 0 014.07 6.18 2 2 0 016.07 4h3a2 2 0 012 1.72c.127.96.361 1.903.7 2.81a2 2 0 01-.45 2.11L10.09 11a16 16 0 006 6z"/></svg>
+          <input type="text" id="reg-telefono" placeholder="8888-8888" />
+        </div>
+      </div>
+      <div class="field">
+        <label>Ingreso mensual (₡)</label>
+        <div class="field-wrap">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><line x1="12" y1="1" x2="12" y2="23"/><path d="M17 5H9.5a3.5 3.5 0 000 7h5a3.5 3.5 0 010 7H6"/></svg>
+          <input type="number" id="reg-ingreso" placeholder="500000" />
+        </div>
+      </div>
+      <button class="btn-primary" onclick="doRegister()">Crear mi cuenta</button>
+    </div>
+  </div>
+</div>
+
+<!-- APP -->
+<div id="app">
+  <aside class="sidebar">
+    <div class="brand">
+      <div class="brand-icon">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+          <rect x="1" y="3" width="15" height="13" rx="2"/>
+          <path d="M16 8h4l3 5v3h-7V8zM5.5 21a1.5 1.5 0 100-3 1.5 1.5 0 000 3zM18.5 21a1.5 1.5 0 100-3 1.5 1.5 0 000 3z"/>
+        </svg>
+      </div>
+      <div>
+        <div class="brand-name">AutoCredit</div>
+        <div class="brand-sub">Panel de control</div>
+      </div>
+    </div>
+    <nav id="sidebar-nav"></nav>
+    <div class="sidebar-user">
+      <div class="user-avatar" id="user-avatar">AC</div>
+      <div class="user-info">
+        <div class="user-name" id="user-name-display">—</div>
+        <div class="user-role" id="user-role-display">—</div>
+      </div>
+      <button class="logout-btn" onclick="doLogout()" title="Cerrar sesión">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M9 21H5a2 2 0 01-2-2V5a2 2 0 012-2h4M16 17l5-5-5-5M21 12H9"/></svg>
+      </button>
+    </div>
+  </aside>
+
+  <main class="main">
+    <div class="api-status">
+      <div class="api-dot" id="api-dot"></div>
+      <span id="api-status-text">Conectando a localhost:3000…</span>
+    </div>
+    <div class="page-header">
+      <div>
+        <div class="page-title" id="page-title">—</div>
+        <div class="page-sub"   id="page-sub">—</div>
+      </div>
+      <div id="header-actions"></div>
+    </div>
+    <div class="stats" id="stats"></div>
+    <div id="main-content"></div>
+  </main>
+</div>
+
+<!-- MODAL SOLICITUD -->
+<div class="modal-overlay" id="modal-solicitud">
+  <div class="modal">
+    <div class="modal-header">
+      <div>
+        <div class="modal-title">Nueva solicitud de crédito</div>
+        <div class="modal-sub" id="modal-vehiculo-info">—</div>
+      </div>
+      <button class="modal-close" onclick="closeModal()">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg>
+      </button>
+    </div>
+    <input type="hidden" id="sol-vehiculo-id">
+    <div class="field">
+      <label>Tipo de financiamiento</label>
+      <div class="field-wrap">
+        <select id="sol-tipo">
+          <option value="1">Crédito directo</option>
+          <option value="2">Leasing</option>
+          <option value="3">Financiamiento bancario</option>
+        </select>
+      </div>
+    </div>
+    <div class="field">
+      <label>Monto solicitado (₡)</label>
+      <div class="field-wrap"><input type="number" id="sol-monto" placeholder="5000000" /></div>
+    </div>
+    <div class="field">
+      <label>Plazo</label>
+      <div class="field-wrap">
+        <select id="sol-plazo">
+          <option value="12">12 meses</option><option value="24">24 meses</option>
+          <option value="36" selected>36 meses</option><option value="48">48 meses</option>
+          <option value="60">60 meses</option><option value="72">72 meses</option>
+        </select>
+      </div>
+    </div>
+    <div class="field">
+      <label>Tasa de interés anual (%)</label>
+      <div class="field-wrap"><input type="number" id="sol-tasa" placeholder="12.5" step="0.1" value="12" /></div>
+    </div>
+    <button class="btn-primary" onclick="enviarSolicitud()">Enviar solicitud</button>
+  </div>
+</div>
+
+
+<!-- MODAL AGREGAR VEHÍCULO -->
+<div class="modal-overlay" id="modal-vehiculo">
+  <div class="modal">
+    <div class="modal-header">
+      <div>
+        <div class="modal-title">Agregar vehículo</div>
+        <div class="modal-sub">Registrar nuevo vehículo en el inventario</div>
+      </div>
+      <button class="modal-close" onclick="closeModalVehiculo()">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg>
+      </button>
+    </div>
+    <div class="field">
+      <label>Marca</label>
+      <div class="field-wrap"><input type="text" id="veh-marca" placeholder="Toyota, Honda, Hyundai..." /></div>
+    </div>
+    <div class="field">
+      <label>Modelo</label>
+      <div class="field-wrap"><input type="text" id="veh-modelo" placeholder="Corolla, Civic..." /></div>
+    </div>
+    <div class="field">
+      <label>Año</label>
+      <div class="field-wrap"><input type="number" id="veh-ano" placeholder="2024" min="1900" max="2026" /></div>
+    </div>
+    <div class="field">
+      <label>Precio ($)</label>
+      <div class="field-wrap"><input type="number" id="veh-precio" placeholder="25000" min="1" /></div>
+    </div>
+    <button class="btn-primary" onclick="guardarVehiculo()">Guardar vehículo</button>
+  </div>
+</div>
+<div class="toast" id="toast">
+  <div class="toast-dot"></div>
+  <span id="toast-msg"></span>
+</div>
+
+<script>
+// ════════════ ADMINS FIJOS ════════════
+const ADMINS = [
+  { id:'admin-1', nombre:'Camila Chanquispe',  email:'cchanquispe08@gmail.com',         username:'camila', password:'12345', role:'admin' },
+  { id:'admin-2', nombre:'Alvin Ortiz',        email:'alvindalviseortiz2310@gmail.com', username:'alvin',  password:'12345', role:'admin' },
+];
+
+// ════════════ STORAGE ════════════
+const getClients  = () => JSON.parse(localStorage.getItem('ac_clients') || '[]');
+const saveClients = c  => localStorage.setItem('ac_clients', JSON.stringify(c));
+const getSession  = () => JSON.parse(localStorage.getItem('ac_session') || 'null');
+const setSession  = u  => localStorage.setItem('ac_session', JSON.stringify(u));
+const clearSession= () => localStorage.removeItem('ac_session');
+
+// ════════════ UTILS ════════════
+const fmt = n => '$' + Number(n).toLocaleString('en-US',{minimumFractionDigits:2,maximumFractionDigits:2});
+
+function badge(estado){
+  const e=(estado||'').toLowerCase();
+  const cls=e==='aprobado'?'approved':e==='rechazado'?'rejected':'pending';
+  return `<span class="badge badge-${cls}">${estado||'Pendiente'}</span>`;
+}
+
+function showToast(msg, type='success'){
+  const t=document.getElementById('toast');
+  t.className=`toast ${type==='success'?'success':'error-toast'}`;
+  document.getElementById('toast-msg').textContent=msg;
+  t.classList.add('show');
+  setTimeout(()=>t.classList.remove('show'),3500);
+}
+
+function togglePass(id){
+  const el=document.getElementById(id);
+  el.type=el.type==='password'?'text':'password';
+}
+
+function showErr(id,msg){ const e=document.getElementById(id); e.textContent=msg; e.style.display='block'; }
+function hideErr(id){ document.getElementById(id).style.display='none'; }
+
+// ════════════ AUTH ════════════
+function switchTab(tab){
+  document.querySelectorAll('.auth-tab').forEach((b,i)=>
+    b.classList.toggle('active',(tab==='login'&&i===0)||(tab==='register'&&i===1)));
+  document.getElementById('tab-login').style.display    = tab==='login'    ?'':'none';
+  document.getElementById('tab-register').style.display = tab==='register' ?'':'none';
+}
+
+function doLogin(){
+  const raw  = document.getElementById('login-id').value.trim().toLowerCase();
+  const pass = document.getElementById('login-password').value;
+  hideErr('login-error');
+  if(!raw||!pass) return showErr('login-error','Completa todos los campos.');
+
+  // Buscar admin
+  const admin=ADMINS.find(a=>
+    (a.email.toLowerCase()===raw || a.username.toLowerCase()===raw ||
+     a.nombre.toLowerCase()===raw || a.nombre.split(' ')[0].toLowerCase()===raw) &&
+    a.password===pass
+  );
+  if(admin){ setSession(admin); loadApp(admin); return; }
+
+  // Buscar cliente registrado
+  const clients=getClients();
+  const client=clients.find(c=>
+    (c.email.toLowerCase()===raw || c.nombre.toLowerCase()===raw ||
+     c.nombre.split(' ')[0].toLowerCase()===raw) &&
+    c.password===pass
+  );
+  if(client){ setSession(client); loadApp(client); return; }
+
+  showErr('login-error','Usuario o contraseña incorrectos.');
+}
+
+function doRegister(){
+  const nombre  =document.getElementById('reg-nombre').value.trim();
+  const email   =document.getElementById('reg-email').value.trim();
+  const pass    =document.getElementById('reg-password').value;
+  const cedula  =document.getElementById('reg-cedula').value.trim();
+  const telefono=document.getElementById('reg-telefono').value.trim();
+  const ingreso =parseFloat(document.getElementById('reg-ingreso').value);
+  hideErr('reg-error'); hideErr('reg-success');
+
+  if(!nombre||!email||!pass||!cedula||!ingreso)
+    return showErr('reg-error','Completa todos los campos obligatorios.');
+  if(pass.length<6)
+    return showErr('reg-error','La contraseña debe tener al menos 6 caracteres.');
+  if(ADMINS.find(a=>a.email.toLowerCase()===email.toLowerCase()))
+    return showErr('reg-error','No puedes registrarte con ese email.');
+
+  const clients=getClients();
+  if(clients.find(c=>c.email.toLowerCase()===email.toLowerCase()))
+    return showErr('reg-error','Ese email ya está registrado.');
+
+  const newUser={ id:'cli-'+Date.now(), nombre, email, password:pass, role:'cliente', cedula, telefono, ingresoMensual:ingreso };
+
+  fetch('http://localhost:3000/clientes',{
+    method:'POST',headers:{'Content-Type':'application/json'},
+    body:JSON.stringify({nombreCompleto:nombre,cedula,telefono,ingresoMensual:ingreso})
+  })
+  .then(r=>r.json()).then(cli=>{ newUser.clienteId=cli.Id_Cliente; })
+  .catch(()=>{})
+  .finally(()=>{
+    clients.push(newUser); saveClients(clients);
+    document.getElementById('reg-success').style.display='block';
+    document.getElementById('reg-success').textContent='¡Cuenta creada! Ahora puedes ingresar.';
+    setTimeout(()=>switchTab('login'),1800);
+  });
+}
+
+function doLogout(){
+  clearSession(); cache={};
+  document.getElementById('app').style.display='none';
+  document.getElementById('auth-screen').style.display='flex';
+}
+
+// ════════════ APP ════════════
+let cache={}, currentUser=null, currentSection=null;
+
+function loadApp(user){
+  currentUser=user;
+  document.getElementById('auth-screen').style.display='none';
+  document.getElementById('app').style.display='block';
+  document.getElementById('user-name-display').textContent=user.nombre;
+  document.getElementById('user-role-display').textContent=user.role==='admin'?'Administrador':'Cliente';
+  document.getElementById('user-avatar').textContent=user.nombre.split(' ').map(w=>w[0]).join('').substring(0,2).toUpperCase();
+  buildNav(user.role);
+  showSection(user.role==='admin'?'solicitudes':'vehiculos');
+  loadStats(user.role);
+}
+
+const ADMIN_NAV=[
+  {id:'solicitudes',label:'Solicitudes',icon:'<path d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2"/>'},
+  {id:'clientes',   label:'Clientes',   icon:'<path d="M17 21v-2a4 4 0 00-4-4H5a4 4 0 00-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M23 21v-2a4 4 0 00-3-3.87M16 3.13a4 4 0 010 7.75"/>'},
+  {id:'vehiculos',  label:'Vehículos',  icon:'<rect x="1" y="3" width="15" height="13" rx="2"/><path d="M16 8h4l3 5v3h-7V8zM5.5 21a1.5 1.5 0 100-3 1.5 1.5 0 000 3zM18.5 21a1.5 1.5 0 100-3 1.5 1.5 0 000 3z"/>'},
+  {id:'cuotas',     label:'Cuotas',     icon:'<rect x="2" y="5" width="20" height="14" rx="2"/><path d="M2 10h20"/>'},
+  {id:'morosidad',  label:'Morosidad',  icon:'<path d="M10.29 3.86L1.82 18a2 2 0 001.71 3h16.94a2 2 0 001.71-3L13.71 3.86a2 2 0 00-3.42 0z"/><line x1="12" y1="9" x2="12" y2="13"/><line x1="12" y1="17" x2="12.01" y2="17"/>'},
+  {id:'cronograma', label:'Cronograma', icon:'<rect x="3" y="4" width="18" height="18" rx="2"/><line x1="16" y1="2" x2="16" y2="6"/><line x1="8" y1="2" x2="8" y2="6"/><line x1="3" y1="10" x2="21" y2="10"/>'},
+];
+const CLIENT_NAV=[
+  {id:'vehiculos',      label:'Catálogo',         icon:'<rect x="1" y="3" width="15" height="13" rx="2"/><path d="M16 8h4l3 5v3h-7V8zM5.5 21a1.5 1.5 0 100-3 1.5 1.5 0 000 3zM18.5 21a1.5 1.5 0 100-3 1.5 1.5 0 000 3z"/>'},
+  {id:'mis-solicitudes',label:'Mis solicitudes',  icon:'<path d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2"/>'},
+  {id:'mis-cuotas',     label:'Mis cuotas',       icon:'<rect x="2" y="5" width="20" height="14" rx="2"/><path d="M2 10h20"/>'},
+  {id:'cronograma',     label:'Cronograma',       icon:'<rect x="3" y="4" width="18" height="18" rx="2"/><line x1="16" y1="2" x2="16" y2="6"/><line x1="8" y1="2" x2="8" y2="6"/><line x1="3" y1="10" x2="21" y2="10"/>'},
+];
+
+function buildNav(role){
+  const items=role==='admin'?ADMIN_NAV:CLIENT_NAV;
+  document.getElementById('sidebar-nav').innerHTML=items.map(s=>
+    `<a id="nav-${s.id}" onclick="showSection('${s.id}')"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">${s.icon}</svg>${s.label}</a>`
+  ).join('');
+}
+
+const BASE='http://localhost:3000';
+async function fetchData(path){
+  if(cache[path]) return cache[path];
+  const r=await fetch(BASE+path);
+  if(!r.ok) throw new Error('HTTP '+r.status);
+  cache[path]=await r.json();
+  return cache[path];
+}
+function setApiStatus(online){
+  document.getElementById('api-dot').className='api-dot '+(online?'online':'offline');
+  document.getElementById('api-status-text').textContent=online
+    ?'API conectada — localhost:3000'
+    :'Sin conexión a la API — ¿npm run start:dev?';
+}
+
+const solIcon  ='<path d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2"/>';
+const cliIcon  ='<path d="M17 21v-2a4 4 0 00-4-4H5a4 4 0 00-4 4v2"/><circle cx="9" cy="7" r="4"/>';
+const vehIcon  ='<rect x="1" y="3" width="15" height="13" rx="2"/><path d="M16 8h4l3 5v3h-7V8z"/>';
+const montoIcon='<line x1="12" y1="1" x2="12" y2="23"/><path d="M17 5H9.5a3.5 3.5 0 000 7h5a3.5 3.5 0 010 7H6"/>';
+const scard=(cls,ic,lbl,val)=>`<div class="stat-card"><div class="stat-icon ${cls}"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">${ic}</svg></div><div class="stat-label">${lbl}</div><div class="stat-value">${val}</div></div>`;
+
+async function loadStats(role){
+  const el=document.getElementById('stats');
+  try{
+    if(role==='admin'){
+      const [sol,cli,veh]=await Promise.all([fetchData('/solicitudes'),fetchData('/clientes'),fetchData('/vehiculos')]);
+      const total=sol.reduce((a,s)=>a+Number(s.montoSolicitado||0),0);
+      el.innerHTML=scard('icon-stat-purple',solIcon,'Solicitudes',sol.length)+scard('icon-stat-teal',cliIcon,'Clientes',cli.length)+scard('icon-stat-blue',vehIcon,'Vehículos',veh.length)+scard('icon-stat-amber',montoIcon,'Monto total',fmt(total));
+    } else {
+      const veh=await fetchData('/vehiculos');
+      el.innerHTML=scard('icon-stat-blue',vehIcon,'Disponibles',veh.filter(v=>v.disponible).length)+scard('icon-stat-pink',vehIcon,'En catálogo',veh.length);
+    }
+    setApiStatus(true);
+  } catch { setApiStatus(false); el.innerHTML=''; }
+}
+
+async function showSection(name){
+  currentSection=name;
+  document.querySelectorAll('nav a').forEach(a=>a.classList.remove('active'));
+  const nav=document.getElementById('nav-'+name);
+  if(nav) nav.classList.add('active');
+
+  if(currentUser.role==='cliente'){ await showClientSection(name); return; }
+
+  const cfg={
+    solicitudes:{ title:'Solicitudes',sub:'Listado de solicitudes de crédito',card:'Solicitudes de crédito',path:'/solicitudes',render:renderSolicitudes },
+    clientes:   { title:'Clientes',   sub:'Clientes registrados en el sistema', card:'Clientes',             path:'/clientes',   render:renderClientes },
+    vehiculos:  { title:'Vehículos',  sub:'Inventario de vehículos',            card:'Inventario',           path:'/vehiculos',  render:renderVehiculosAdmin, extraHeader:true },
+    cuotas:     { title:'Cuotas',     sub:'Cuotas generadas por créditos aprobados',card:'Cuotas',           path:'/cuotas',     render:renderCuotas },
+  };
+  const s=cfg[name];
+  if(!s){
+    if(name==='morosidad'){ showMorosidad(); return; }
+    if(name==='cronograma'){ showCronogramaAdmin(); return; }
+    return;
+  }
+  document.getElementById('page-title').textContent=s.title;
+  document.getElementById('page-sub').textContent=s.sub;
+  document.getElementById('header-actions').innerHTML='';
+  const extraBtn=s.extraHeader?`<button class="btn-primary" style="width:auto;padding:7px 16px;margin:0;font-size:12px" onclick="abrirModalAgregarVehiculo()">+ Agregar vehículo</button>`:'';
+  document.getElementById('main-content').innerHTML=`
+    <div class="card">
+      <div class="card-header"><div class="card-title">${s.card}</div><div style="display:flex;gap:8px;align-items:center">${extraBtn}<button class="refresh-btn" onclick="reload()">↻ Actualizar</button></div></div>
+      <div class="table-wrap" id="table-content"><div class="loading"><div class="spinner"></div>Cargando…</div></div>
+    </div>`;
+  try{
+    const data=await fetchData(s.path);
+    document.getElementById('table-content').innerHTML=s.render(data);
+    setApiStatus(true);
+  } catch {
+    setApiStatus(false);
+    document.getElementById('table-content').innerHTML='<div class="error">No se pudo conectar a la API. Asegúrate de que esté corriendo con <strong>npm run start:dev</strong></div>';
+  }
+}
+
+async function showClientSection(name){
+  const meta={'vehiculos':['Catálogo de vehículos','Explora los vehículos disponibles y solicita tu crédito'],'mis-solicitudes':['Mis solicitudes','Estado de tus solicitudes de crédito'],'mis-cuotas':['Mis cuotas','Plan de pagos de tus créditos aprobados'],'cronograma':['Cronograma de pagos','Detalle completo de tus cuotas por solicitud']};
+  const [title,sub]=meta[name]||['—','—'];
+  document.getElementById('page-title').textContent=title;
+  document.getElementById('page-sub').textContent=sub;
+  document.getElementById('header-actions').innerHTML='';
+
+  if(name==='vehiculos'){
+    document.getElementById('main-content').innerHTML=`<div id="table-content"><div class="loading"><div class="spinner"></div>Cargando catálogo…</div></div>`;
+    try{ const [d,sols]=await Promise.all([fetchData('/vehiculos'),fetchData('/solicitudes')]); const reservados=new Set(sols.filter(s=>s.estado==='Pendiente'||s.estado==='Aprobado').map(s=>s.Id_Vehiculo)); const vehiculosConEstado=d.map(v=>({...v,reservado:reservados.has(v.Id_Vehiculo)})); document.getElementById('table-content').innerHTML=renderCatalogo(vehiculosConEstado); setApiStatus(true); }
+    catch{ setApiStatus(false); document.getElementById('table-content').innerHTML='<div class="error">No se pudo conectar a la API.</div>'; }
+  } else if(name==='mis-solicitudes'){
+    document.getElementById('main-content').innerHTML=`<div class="card"><div class="card-header"><div class="card-title">Mis solicitudes</div><button class="refresh-btn" onclick="reload()">↻ Actualizar</button></div><div class="table-wrap" id="table-content"><div class="loading"><div class="spinner"></div>Cargando…</div></div></div>`;
+    try{ const all=await fetchData('/solicitudes'); const primerNombre=currentUser.nombre.split(' ')[0].toLowerCase(); const mine=all.filter(s=>(s.cliente||'').toLowerCase().includes(primerNombre)); document.getElementById('table-content').innerHTML=renderSolicitudes(mine); setApiStatus(true); }
+    catch{ setApiStatus(false); document.getElementById('table-content').innerHTML='<div class="error">No se pudo conectar.</div>'; }
+  } else if(name==='mis-cuotas'){
+    document.getElementById('main-content').innerHTML=`<div class="card"><div class="card-header"><div class="card-title">Mis cuotas</div><button class="refresh-btn" onclick="reload()">↻ Actualizar</button></div><div class="table-wrap" id="table-content"><div class="loading"><div class="spinner"></div>Cargando…</div></div></div>`;
+    try{ const d=await fetchData('/cuotas'); document.getElementById('table-content').innerHTML=renderCuotas(d); setApiStatus(true); }
+    catch{ setApiStatus(false); document.getElementById('table-content').innerHTML='<div class="error">No se pudo conectar.</div>'; }
+  } else if(name==='cronograma'){
+    showCronogramaCliente();
+  }
+}
+
+function reload(){
+  ['/solicitudes','/clientes','/vehiculos','/cuotas'].forEach(p=>delete cache[p]);
+  if(currentSection) showSection(currentSection);
+}
+
+// ════════════ RENDERERS ════════════
+const EMOJIS=['🚗','🚙','🏎️','🚕','🚐','🛻','🚌'];
+
+function renderCatalogo(data){
+  if(!data.length) return '<div class="empty">No hay vehículos registrados</div>';
+  const cards=data.map((v,i)=>{
+    const ano=v.ano||v.año||'—';
+    return `<div class="vcard">
+      <div class="vcard-img">
+        ${EMOJIS[i%EMOJIS.length]}
+        <span class="vcard-avail-badge ${(v.disponible&&!v.reservado)?'avail-yes':'avail-no'}">${v.reservado?'Reservado':v.disponible?'Disponible':'No disponible'}</span>
+      </div>
+      <div class="vcard-body">
+        <div>
+          <div class="vcard-price">${fmt(v.precio)}</div>
+          <div class="vcard-location"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21 10c0 7-9 13-9 13s-9-6-9-13a9 9 0 0118 0z"/><circle cx="12" cy="10" r="3"/></svg>Costa Rica</div>
+          <div class="vcard-specs">
+            <div class="vcard-spec"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="4" width="18" height="18" rx="2"/><line x1="16" y1="2" x2="16" y2="6"/><line x1="8" y1="2" x2="8" y2="6"/><line x1="3" y1="10" x2="21" y2="10"/></svg><strong>${ano}</strong></div>
+            <div class="vcard-spec"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="10"/><path d="M12 8v4l3 3"/></svg>ID <strong>#${v.Id_Vehiculo}</strong></div>
+          </div>
+          <div class="vcard-name">${v.marca} ${v.modelo} ${ano}</div>
+          <div class="vcard-desc">Vehículo ${v.disponible?'disponible para financiamiento':'no disponible actualmente'}. Consulta las condiciones de crédito.</div>
+        </div>
+        <div class="vcard-footer">
+          <span class="tag">${v.marca}</span>
+          <button class="btn-solicitud" ${(!v.disponible||v.reservado)?'disabled':''} onclick="openSolicitud(${v.Id_Vehiculo},'${v.marca} ${v.modelo}',${v.precio})">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2"/><line x1="12" y1="11" x2="12" y2="17"/><line x1="9" y1="14" x2="15" y2="14"/></svg>
+            ${v.reservado?'Reservado':v.disponible?'Solicitar crédito':'No disponible'}
+          </button>
+        </div>
+      </div>
+    </div>`;
+  }).join('');
+  return `<div style="padding:1.5rem 1.5rem 0"><div class="listing-meta"><div class="listing-count">Mostrando <strong>${data.length}</strong> vehículos · <strong>${data.filter(v=>v.disponible).length}</strong> disponibles</div><button class="refresh-btn" onclick="reload()">↻ Actualizar</button></div></div><div style="padding:0 1.5rem 1.5rem"><div class="vehicle-list">${cards}</div></div>`;
+}
+
+function renderSolicitudes(data){
+  if(!data.length) return '<div class="empty">No hay solicitudes registradas</div>';
+  const isAdmin=currentUser.role==='admin';
+  return `<table><thead><tr><th>#</th><th>Cliente</th><th>Vehículo</th><th>Monto</th><th>Cuota</th><th>Plazo</th><th>Tipo</th><th>Estado</th>${isAdmin?'<th>Acciones</th>':''}</tr></thead><tbody>${data.map(s=>`<tr>
+    <td style="color:var(--text3)">${s.Id_Solicitud}</td>
+    <td style="color:var(--text);font-weight:500">${s.cliente||s.Id_Cliente||'—'}</td>
+    <td>${s.vehiculo||s.Id_Vehiculo||'—'}</td>
+    <td>${fmt(s.montoSolicitado)}</td>
+    <td style="color:var(--purple);font-weight:500">${fmt(s.cuotaMensual||0)}</td>
+    <td>${s.plazoMeses} m.</td>
+    <td><span class="tag">${s.tipoFinanciamiento||'Crédito'}</span></td>
+    <td>${badge(s.estado||'Pendiente')}</td>
+    ${isAdmin?`<td><button class="act-btn act-approve" onclick="aprobarSolicitud(${s.Id_Solicitud})">✓ Aprobar</button><button class="act-btn act-reject" onclick="rechazarSolicitud(${s.Id_Solicitud})">✗ Rechazar</button></td>`:''}
+  </tr>`).join('')}</tbody></table>`;
+}
+
+function renderClientes(data){
+  if(!data.length) return '<div class="empty">No hay clientes registrados</div>';
+  return `<table><thead><tr><th>#</th><th>Nombre</th><th>Cédula</th><th>Teléfono</th><th>Ingreso mensual</th><th>Registro</th></tr></thead><tbody>${data.map(c=>`<tr>
+    <td style="color:var(--text3)">${c.Id_Cliente}</td>
+    <td style="color:var(--text);font-weight:500">${c.nombreCompleto}</td>
+    <td>${c.cedula}</td><td>${c.telefono||'—'}</td>
+    <td style="color:var(--teal)">${fmt(c.ingresoMensual)}</td>
+    <td style="color:var(--text3)">${c.fechaRegistro||'—'}</td>
+  </tr>`).join('')}</tbody></table>`;
+}
+
+function renderVehiculosAdmin(data){
+  if(!data.length) return '<div class="empty">No hay vehículos registrados</div>';
+  return `<table><thead><tr><th>#</th><th>Marca</th><th>Modelo</th><th>Año</th><th>Precio</th><th>Disponible</th><th>Acciones</th></tr></thead><tbody>${data.map(v=>`<tr>
+    <td style="color:var(--text3)">${v.Id_Vehiculo}</td>
+    <td style="color:var(--text);font-weight:500">${v.marca}</td>
+    <td>${v.modelo}</td><td>${v.ano||v.año||'—'}</td>
+    <td style="color:var(--blue)">${fmt(v.precio)}</td>
+    <td><span class="dot ${v.disponible?'dot-green':'dot-red'}"></span>${v.disponible?'Disponible':'No disponible'}</td>
+    <td><button class="act-btn act-reject" onclick="eliminarVehiculo(${v.Id_Vehiculo},'${v.marca} ${v.modelo}')">✕ Eliminar</button></td>
+  </tr>`).join('')}</tbody></table>`;
+}
+
+async function eliminarVehiculo(id, nombre){
+  if(!confirm('¿Eliminar '+nombre+'? Esta acción no se puede deshacer.')) return;
+  try{
+    const r=await fetch(BASE+'/vehiculos/'+id,{method:'DELETE'});
+    if(!r.ok) throw new Error();
+    showToast('Vehículo eliminado'); delete cache['/vehiculos']; showSection('vehiculos');
+  } catch{ showToast('No se puede eliminar: tiene solicitudes asociadas','error'); }
+}
+
+function renderCuotas(data){
+  if(!data.length) return '<div class="empty">No hay cuotas registradas</div>';
+  const isAdmin=currentUser.role==='admin';
+  return `<table><thead><tr><th>#</th><th>Solicitud</th><th>N° Cuota</th><th>Vencimiento</th><th>Monto</th><th>Estado</th>${isAdmin?'<th>Acción</th>':''}</tr></thead><tbody>${data.map((c,i)=>`<tr>
+    <td style="color:var(--text3)">${i+1}</td>
+    <td>${c.Id_Solicitud||'—'}</td><td>${c.numeroCuota||'—'}</td>
+    <td>${c.fechaVencimiento||'—'}</td>
+    <td style="color:var(--amber)">${fmt(c.montoCuota)}</td>
+    <td>${badge(c.nombreEstado||c.estado||'Pendiente')}</td>
+    ${isAdmin?`<td>${(c.nombreEstado||c.estado||'').toLowerCase()==='pendiente'?`<button class="act-btn act-approve" onclick="pagarCuota(${c.Id_Cuotas||i+1})">✓ Pagar</button>`:'<span style="color:var(--text3);font-size:11px">—</span>'}</td>`:''}
+  </tr>`).join('')}</tbody></table>`;
+}
+
+async function aprobarSolicitud(id){
+  try{ await fetch(BASE+`/solicitudes/${id}/aprobar`,{method:'PUT'}); showToast('Solicitud aprobada ✓'); delete cache['/solicitudes']; showSection('solicitudes'); }
+  catch{ showToast('Error al aprobar','error'); }
+}
+async function rechazarSolicitud(id){
+  try{ await fetch(BASE+`/solicitudes/${id}/rechazar`,{method:'PUT'}); showToast('Solicitud rechazada'); delete cache['/solicitudes']; showSection('solicitudes'); }
+  catch{ showToast('Error al rechazar','error'); }
+}
+async function pagarCuota(idCuota){
+  try{
+    const r=await fetch(BASE+`/cuotas/${idCuota}/pagar`,{method:'PUT'});
+    if(!r.ok) throw new Error();
+    showToast('Pago registrado ✓');
+    delete cache['/cuotas/morosidad'];
+    if(currentSection==='morosidad') showMorosidad();
+    else if(currentSection==='cuotas') showSection('cuotas');
+  } catch{ showToast('Error al registrar pago','error'); }
+}
+
+async function showMorosidad(){
+  document.getElementById('page-title').textContent='Morosidad';
+  document.getElementById('page-sub').textContent='Cuotas vencidas con días de mora';
+  document.getElementById('header-actions').innerHTML='';
+  document.getElementById('main-content').innerHTML=`
+    <div class="card">
+      <div class="card-header"><div class="card-title">Reporte de morosidad</div><button class="refresh-btn" onclick="showMorosidad()">↻ Actualizar</button></div>
+      <div class="table-wrap" id="table-content"><div class="loading"><div class="spinner"></div>Cargando…</div></div>
+    </div>`;
+  try{
+    const r=await fetch(BASE+'/cuotas/morosidad');
+    if(!r.ok) throw new Error();
+    const data=await r.json();
+    document.getElementById('table-content').innerHTML=renderMorosidad(data);
+    setApiStatus(true);
+  } catch{ setApiStatus(false); document.getElementById('table-content').innerHTML='<div class="error">No se pudo conectar a la API.</div>'; }
+}
+
+function renderMorosidad(data){
+  if(!data.length) return '<div class="empty">✓ Sin cuotas vencidas</div>';
+  return `<table><thead><tr><th>Cliente</th><th>Teléfono</th><th>Vehículo</th><th>Solicitud</th><th>N° Cuota</th><th>Vencimiento</th><th>Días mora</th><th>Monto</th><th>Acción</th></tr></thead><tbody>${data.map(c=>`<tr>
+    <td style="color:var(--text);font-weight:500">${c.cliente||'—'}</td>
+    <td>${c.telefono||'—'}</td>
+    <td>${c.vehiculo||'—'}</td>
+    <td style="color:var(--text3)">#${c.Id_Solicitud}</td>
+    <td>${c.numeroCuota}</td>
+    <td>${c.fechaVencimiento||'—'}</td>
+    <td><span style="color:var(--red);font-weight:700">${c.diasMora} días</span></td>
+    <td style="color:var(--amber);font-weight:500">${fmt(c.montoCuota)}</td>
+    <td><button class="act-btn act-approve" onclick="pagarCuota(${c.Id_Cuotas})">✓ Pagar</button></td>
+  </tr>`).join('')}</tbody></table>`;
+}
+
+async function showCronogramaAdmin(){
+  document.getElementById('page-title').textContent='Cronograma de pagos';
+  document.getElementById('page-sub').textContent='Detalle de cuotas por solicitud';
+  document.getElementById('header-actions').innerHTML='';
+  document.getElementById('main-content').innerHTML=`
+    <div class="card" style="margin-bottom:1rem">
+      <div class="card-header"><div class="card-title">Buscar por ID de solicitud</div></div>
+      <div style="padding:1.25rem;display:flex;gap:12px;align-items:flex-end">
+        <div style="flex:1">
+          <label style="display:block;font-size:12px;color:var(--text3);text-transform:uppercase;letter-spacing:.06em;margin-bottom:6px">ID de Solicitud</label>
+          <input id="cron-id-input" type="text" placeholder="Ej: 1" inputmode="numeric" pattern="[0-9]*"
+            style="width:100%;background:var(--surface2);border:1px solid var(--border);border-radius:10px;padding:10px 14px;color:var(--text);font-size:14px;outline:none"
+            oninput="window._cronId=this.value"
+            onkeydown="if(event.key==='Enter'){window._cronId=this.value;buscarCronograma(window._cronId);}">
+        </div>
+        <button class="btn-primary" style="width:auto;padding:10px 24px;margin-top:0" onclick="window._cronId=document.getElementById('cron-id-input').value;buscarCronograma(window._cronId)">Ver cronograma</button>
+        <button class="refresh-btn" style="padding:10px 18px" onclick="verTodosCronogramas()">Ver todos</button>
+      </div>
+    </div>
+    <div id="cronograma-result"></div>`;
+}
+
+async function verTodosCronogramas(){
+  const el=document.getElementById('cronograma-result');
+  el.innerHTML='<div class="loading"><div class="spinner"></div>Cargando todos los cronogramas…</div>';
+  try{
+    const sols=await fetchData('/solicitudes');
+    if(!sols.length){ el.innerHTML='<div class="empty">No hay solicitudes registradas.</div>'; return; }
+    let html='';
+    for(const sol of sols){
+      try{
+        const r=await fetch(BASE+`/cuotas/cronograma/${sol.Id_Solicitud}`);
+        if(!r.ok) continue;
+        const cuotas=await r.json();
+        if(!cuotas||!cuotas.length) continue;
+        html+=`<div class="card" style="margin-bottom:1.5rem">
+          <div class="card-header">
+            <div class="card-title">Solicitud #${sol.Id_Solicitud} — ${sol.cliente||'Cliente'} · ${sol.vehiculo||'Vehículo'}</div>
+            <span style="font-size:12px;color:var(--text3)">${fmt(sol.montoSolicitado)} · ${sol.plazoMeses} meses · ${sol.tasaInteres}% anual</span>
+          </div>
+          <div class="table-wrap">${renderCronograma(cuotas)}</div>
+        </div>`;
+      } catch(e){}
+    }
+    el.innerHTML=html||'<div class="empty">No hay cronogramas disponibles.</div>';
+    setApiStatus(true);
+  } catch{ setApiStatus(false); el.innerHTML='<div class="error">No se pudo conectar a la API.</div>'; }
+}
+
+async function showCronogramaCliente(){
+  document.getElementById('page-title').textContent='Cronograma de pagos';
+  document.getElementById('page-sub').textContent='Detalle completo de tus cuotas por solicitud';
+  document.getElementById('header-actions').innerHTML='';
+  document.getElementById('main-content').innerHTML=`<div class="loading"><div class="spinner"></div>Cargando tus solicitudes…</div>`;
+  try{
+    const all=await fetchData('/solicitudes');
+    const primerNombre=currentUser.nombre.split(' ')[0].toLowerCase();
+    const mine=all.filter(s=>(s.cliente||'').toLowerCase().includes(primerNombre));
+    if(!mine.length){ document.getElementById('main-content').innerHTML='<div class="empty">No tenés solicitudes aprobadas con cronograma disponible.</div>'; return; }
+    let html='';
+    for(const sol of mine){
+      const r=await fetch(BASE+`/cuotas/cronograma/${sol.Id_Solicitud}`);
+      const cuotas=await r.json();
+      html+=`<div class="card" style="margin-bottom:1.5rem">
+        <div class="card-header">
+          <div class="card-title">Solicitud #${sol.Id_Solicitud} — ${sol.vehiculo||'Vehículo'}</div>
+          <span style="font-size:12px;color:var(--text3)">${fmt(sol.montoSolicitado)} · ${sol.plazoMeses} meses · ${sol.tasaInteres}% anual</span>
+        </div>
+        <div class="table-wrap">${renderCronograma(cuotas)}</div>
+      </div>`;
+    }
+    document.getElementById('main-content').innerHTML=html;
+    setApiStatus(true);
+  } catch{ setApiStatus(false); document.getElementById('main-content').innerHTML='<div class="error">No se pudo conectar a la API.</div>'; }
+}
+
+async function buscarCronograma(idOverride){
+  const inputEl=document.getElementById('cron-id-input');
+  const id=idOverride||(inputEl?inputEl.value:'');
+  if(!id||isNaN(id)) return showToast('Ingresá un ID de solicitud válido','error');
+  const el=document.getElementById('cronograma-result');
+  if(!el) return;
+  el.innerHTML=''; // limpiar resultados anteriores
+  el.innerHTML='<div class="loading"><div class="spinner"></div>Cargando solicitud #'+id+'…</div>';
+  try{
+    const r=await fetch(BASE+'/cuotas/cronograma/'+id);
+    if(!r.ok) throw new Error('no encontrado');
+    const data=await r.json();
+    if(!data||!data.length){ el.innerHTML='<div class="empty">No hay cuotas para esta solicitud. ¿Ya fue aprobada?</div>'; return; }
+    el.innerHTML='<div class="card"><div class="card-header"><div class="card-title">Cronograma — Solicitud #'+id+'</div></div><div class="table-wrap">'+renderCronograma(data)+'</div></div>';
+    setApiStatus(true);
+  } catch(e){ setApiStatus(false); el.innerHTML='<div class="error">Solicitud #'+id+' no encontrada o sin cuotas generadas.</div>'; }
+}
+
+function renderCronograma(data){
+  if(!data||!data.length) return '<div class="empty">Sin datos de cronograma</div>';
+  return `<table><thead><tr><th>#</th><th>Vencimiento</th><th>Cuota</th><th>Interés</th><th>Amortización</th><th>Saldo restante</th></tr></thead><tbody>${data.map(c=>`<tr>
+    <td style="color:var(--text3)">${c.numeroCuota||'—'}</td>
+    <td>${c.fechaVencimiento||'—'}</td>
+    <td style="color:var(--amber);font-weight:500">${fmt(c.montoCuota)}</td>
+    <td style="color:var(--red)">${fmt(c.interesCuota)}</td>
+    <td style="color:var(--green)">${fmt(c.amortizacion)}</td>
+    <td style="color:var(--blue)">${fmt(c.saldoRestante)}</td>
+  </tr>`).join('')}</tbody></table>`;
+}
+
+function openSolicitud(vehiculoId,nombre,precio){
+  document.getElementById('sol-vehiculo-id').value=vehiculoId;
+  document.getElementById('modal-vehiculo-info').textContent=nombre+' — '+fmt(precio);
+  document.getElementById('sol-monto').value=Math.round(precio*0.8);
+  document.getElementById('modal-solicitud').classList.add('open');
+}
+function closeModal(){ document.getElementById('modal-solicitud').classList.remove('open'); }
+
+async function enviarSolicitud(){
+  const vehiculoId=parseInt(document.getElementById('sol-vehiculo-id').value);
+  const monto=parseFloat(document.getElementById('sol-monto').value);
+  const plazo=parseInt(document.getElementById('sol-plazo').value);
+  const tasa=parseFloat(document.getElementById('sol-tasa').value);
+  const tipo=parseInt(document.getElementById('sol-tipo').value);
+  if(!monto||!plazo||!tasa) return showToast('Completa todos los campos','error');
+  // Buscar clienteId si no existe
+  if(!currentUser.clienteId){
+    try{
+      const res=await fetch(BASE+'/clientes');
+      const clientes=await res.json();
+      const primerNombre=currentUser.nombre.split(' ')[0].toLowerCase();
+      const found=clientes.find(c=>(c.nombreCompleto||'').toLowerCase().includes(primerNombre));
+      if(found){ currentUser.clienteId=found.Id_Cliente; setSession(currentUser); }
+    }catch(e){}
+  }
+  if(!currentUser.clienteId) return showToast('No se encontro tu perfil en la API.','error');
+  try{
+    const r=await fetch(BASE+'/solicitudes',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({tasaInteres:tasa,plazoMeses:plazo,montoSolicitado:monto,Id_Usuario:1,Id_Cliente:currentUser.clienteId,Id_Vehiculo:vehiculoId,Id_Tipo:tipo,Id_Estado:1})});
+    if(!r.ok) throw new Error();
+    showToast('¡Solicitud enviada exitosamente!'); closeModal(); delete cache['/solicitudes'];
+  } catch { showToast('Error al enviar la solicitud','error'); }
+}
+
+document.getElementById('modal-solicitud').addEventListener('click',function(e){ if(e.target===this)closeModal(); });
+
+function abrirModalAgregarVehiculo(){
+  document.getElementById('veh-marca').value='';
+  document.getElementById('veh-modelo').value='';
+  document.getElementById('veh-ano').value='';
+  document.getElementById('veh-precio').value='';
+  document.getElementById('modal-vehiculo').classList.add('open');
+}
+function closeModalVehiculo(){ document.getElementById('modal-vehiculo').classList.remove('open'); }
+
+async function guardarVehiculo(){
+  const marca=document.getElementById('veh-marca').value.trim();
+  const modelo=document.getElementById('veh-modelo').value.trim();
+  const ano=parseInt(document.getElementById('veh-ano').value);
+  const precio=parseFloat(document.getElementById('veh-precio').value);
+  if(!marca||!modelo||!ano||!precio) return showToast('Completa todos los campos','error');
+  try{
+    const r=await fetch(BASE+'/vehiculos',{method:'POST',headers:{'Content-Type':'application/json'},
+      body:JSON.stringify({marca,modelo,ano,precio,disponible:true})});
+    if(!r.ok) throw new Error();
+    showToast('Vehículo agregado exitosamente ✓');
+    closeModalVehiculo();
+    delete cache['/vehiculos'];
+    showSection('vehiculos');
+  } catch{ showToast('Error al agregar vehículo','error'); }
+}
+
+document.getElementById('modal-vehiculo').addEventListener('click',function(e){ if(e.target===this)closeModalVehiculo(); });
+
+
+// INIT
+(function(){ const u=getSession(); if(u) loadApp(u); })();
+</script>
+</body>
+</html>
