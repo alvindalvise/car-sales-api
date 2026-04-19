@@ -1,0 +1,480 @@
+openapi: 3.0.3
+info:
+  title: API Venta de Vehículos
+  description: |
+    API REST desarrollada con **NestJS** y **Sequelize** para gestionar la venta de vehículos.
+    
+    Permite administrar:
+    - 👤 **Clientes**: registro y consulta
+    - 🚗 **Vehículos**: CRUD completo
+    - 📋 **Solicitudes de crédito**: creación y aprobación
+    - 💳 **Cuotas**: consulta y pago
+    
+    **Base de datos**: SQL Server (`Venta_VehiculoDB`)
+  version: 1.0.0
+  contact:
+    name: Alvin Dalvise & Camila Chanquispe
+    email: alvindalviseortiz2310@gmail.com
+
+servers:
+  - url: http://localhost:3000
+    description: Servidor local de desarrollo
+
+tags:
+  - name: Clientes
+    description: Gestión de clientes registrados
+  - name: Vehículos
+    description: Inventario y CRUD de vehículos
+  - name: Solicitudes
+    description: Solicitudes de crédito para compra
+  - name: Cuotas
+    description: Cuotas generadas por solicitudes aprobadas
+
+paths:
+
+  # ─────────────────────────────────────────────
+  # CLIENTES
+  # ─────────────────────────────────────────────
+  /clientes:
+    get:
+      tags: [Clientes]
+      summary: Obtener todos los clientes
+      operationId: getClientes
+      responses:
+        '200':
+          description: Lista de clientes
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: '#/components/schemas/Cliente'
+
+  /clientes/{id}:
+    get:
+      tags: [Clientes]
+      summary: Obtener cliente por ID
+      operationId: getClienteById
+      parameters:
+        - $ref: '#/components/parameters/IdParam'
+      responses:
+        '200':
+          description: Cliente encontrado
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Cliente'
+        '404':
+          description: Cliente no encontrado
+
+  # ─────────────────────────────────────────────
+  # VEHÍCULOS
+  # ─────────────────────────────────────────────
+  /vehiculos:
+    post:
+      tags: [Vehículos]
+      summary: Crear un nuevo vehículo
+      operationId: createVehiculo
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/CreateVehiculoDto'
+      responses:
+        '201':
+          description: Vehículo creado exitosamente
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Vehiculo'
+        '400':
+          description: Datos inválidos
+
+    get:
+      tags: [Vehículos]
+      summary: Obtener todos los vehículos
+      operationId: getVehiculos
+      responses:
+        '200':
+          description: Lista de vehículos
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: '#/components/schemas/Vehiculo'
+
+  /vehiculos/{id}:
+    get:
+      tags: [Vehículos]
+      summary: Obtener vehículo por ID
+      operationId: getVehiculoById
+      parameters:
+        - $ref: '#/components/parameters/IdParam'
+      responses:
+        '200':
+          description: Vehículo encontrado
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Vehiculo'
+        '404':
+          description: Vehículo no encontrado
+
+    put:
+      tags: [Vehículos]
+      summary: Actualizar un vehículo
+      operationId: updateVehiculo
+      parameters:
+        - $ref: '#/components/parameters/IdParam'
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/UpdateVehiculoDto'
+      responses:
+        '200':
+          description: Vehículo actualizado
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Vehiculo'
+        '404':
+          description: Vehículo no encontrado
+
+    delete:
+      tags: [Vehículos]
+      summary: Eliminar un vehículo
+      operationId: deleteVehiculo
+      parameters:
+        - $ref: '#/components/parameters/IdParam'
+      responses:
+        '200':
+          description: Vehículo eliminado
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  message:
+                    type: string
+                    example: Vehiculo eliminado correctamente
+        '404':
+          description: Vehículo no encontrado
+
+  # ─────────────────────────────────────────────
+  # SOLICITUDES
+  # ─────────────────────────────────────────────
+  /solicitudes:
+    post:
+      tags: [Solicitudes]
+      summary: Crear una solicitud de crédito
+      operationId: createSolicitud
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/CreateSolicitudDto'
+      responses:
+        '201':
+          description: Solicitud creada exitosamente
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Solicitud'
+        '400':
+          description: Datos inválidos
+
+    get:
+      tags: [Solicitudes]
+      summary: Obtener todas las solicitudes
+      operationId: getSolicitudes
+      responses:
+        '200':
+          description: Lista de solicitudes
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: '#/components/schemas/Solicitud'
+
+  /solicitudes/aprobar:
+    put:
+      tags: [Solicitudes]
+      summary: Aprobar una solicitud de crédito
+      description: |
+        Aprueba una solicitud pendiente y genera las cuotas correspondientes automáticamente.
+      operationId: aprobarSolicitud
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/AprobarSolicitudDto'
+      responses:
+        '200':
+          description: Solicitud aprobada y cuotas generadas
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Solicitud'
+        '400':
+          description: Solicitud no válida o ya aprobada
+        '404':
+          description: Solicitud no encontrada
+
+  # ─────────────────────────────────────────────
+  # CUOTAS
+  # ─────────────────────────────────────────────
+  /cuotas:
+    get:
+      tags: [Cuotas]
+      summary: Obtener todas las cuotas
+      operationId: getCuotas
+      responses:
+        '200':
+          description: Lista de todas las cuotas
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: '#/components/schemas/Cuota'
+
+  /cuotas/solicitud/{id}:
+    get:
+      tags: [Cuotas]
+      summary: Obtener cuotas por solicitud
+      operationId: getCuotasBySolicitud
+      parameters:
+        - name: id
+          in: path
+          required: true
+          description: ID de la solicitud
+          schema:
+            type: integer
+            example: 1
+      responses:
+        '200':
+          description: Cuotas de la solicitud indicada
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: '#/components/schemas/Cuota'
+        '404':
+          description: Solicitud no encontrada
+
+  /cuotas/{id}/pagar:
+    put:
+      tags: [Cuotas]
+      summary: Registrar pago de una cuota
+      operationId: pagarCuota
+      parameters:
+        - $ref: '#/components/parameters/IdParam'
+      responses:
+        '200':
+          description: Cuota marcada como pagada
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Cuota'
+        '404':
+          description: Cuota no encontrada
+
+# ─────────────────────────────────────────────
+# COMPONENTES
+# ─────────────────────────────────────────────
+components:
+
+  parameters:
+    IdParam:
+      name: id
+      in: path
+      required: true
+      description: Identificador numérico del recurso
+      schema:
+        type: integer
+        example: 1
+
+  schemas:
+
+    # ── ENTIDADES ──────────────────────────────
+
+    Cliente:
+      type: object
+      description: Representa un cliente registrado en el sistema
+      properties:
+        Id_Cliente:
+          type: integer
+          readOnly: true
+          example: 1
+        nombreCompleto:
+          type: string
+          maxLength: 150
+          example: Juan Pérez González
+        cedula:
+          type: string
+          maxLength: 20
+          example: '1-1234-5678'
+        telefono:
+          type: string
+          maxLength: 20
+          nullable: true
+          example: '8888-9999'
+        ingresoMensual:
+          type: number
+          format: decimal
+          example: 850000.00
+        fechaRegistro:
+          type: string
+          format: date
+          readOnly: true
+          example: '2024-03-16'
+
+    Vehiculo:
+      type: object
+      description: Vehículo disponible en el inventario
+      properties:
+        Id_Vehiculo:
+          type: integer
+          readOnly: true
+          example: 1
+        marca:
+          type: string
+          example: Toyota
+        modelo:
+          type: string
+          example: Corolla
+        anio:
+          type: integer
+          example: 2022
+        precio:
+          type: number
+          format: decimal
+          example: 12500000.00
+        disponible:
+          type: boolean
+          example: true
+
+    Solicitud:
+      type: object
+      description: Solicitud de crédito para la compra de un vehículo
+      properties:
+        Id_Solicitud:
+          type: integer
+          readOnly: true
+          example: 1
+        Id_Cliente:
+          type: integer
+          example: 2
+        Id_Vehiculo:
+          type: integer
+          example: 3
+        plazoMeses:
+          type: integer
+          example: 36
+        estado:
+          type: string
+          enum: [PENDIENTE, APROBADA, RECHAZADA]
+          example: PENDIENTE
+        fechaSolicitud:
+          type: string
+          format: date
+          readOnly: true
+          example: '2024-03-16'
+
+    Cuota:
+      type: object
+      description: Cuota mensual generada para una solicitud aprobada
+      properties:
+        Id_Cuota:
+          type: integer
+          readOnly: true
+          example: 1
+        Id_Solicitud:
+          type: integer
+          example: 1
+        numeroCuota:
+          type: integer
+          example: 1
+        montoCuota:
+          type: number
+          format: decimal
+          example: 347222.22
+        fechaVencimiento:
+          type: string
+          format: date
+          example: '2024-04-16'
+        pagada:
+          type: boolean
+          example: false
+
+    # ── DTOs ──────────────────────────────────
+
+    CreateVehiculoDto:
+      type: object
+      required: [marca, modelo, anio, precio]
+      properties:
+        marca:
+          type: string
+          example: Toyota
+        modelo:
+          type: string
+          example: Corolla
+        anio:
+          type: integer
+          example: 2022
+        precio:
+          type: number
+          example: 12500000.00
+
+    UpdateVehiculoDto:
+      type: object
+      description: Todos los campos son opcionales para actualización parcial
+      properties:
+        marca:
+          type: string
+          example: Honda
+        modelo:
+          type: string
+          example: Civic
+        anio:
+          type: integer
+          example: 2023
+        precio:
+          type: number
+          example: 13000000.00
+        disponible:
+          type: boolean
+          example: false
+
+    CreateSolicitudDto:
+      type: object
+      required: [Id_Cliente, Id_Vehiculo, plazoMeses]
+      properties:
+        Id_Cliente:
+          type: integer
+          example: 1
+        Id_Vehiculo:
+          type: integer
+          example: 2
+        plazoMeses:
+          type: integer
+          minimum: 6
+          maximum: 72
+          example: 36
+
+    AprobarSolicitudDto:
+      type: object
+      required: [IdSolicitud]
+      properties:
+        IdSolicitud:
+          type: integer
+          description: ID de la solicitud a aprobar
+          example: 1
